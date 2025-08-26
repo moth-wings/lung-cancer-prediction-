@@ -1,0 +1,42 @@
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+# ✅ **Tạo dữ liệu giả lập**
+data = {
+    'Tuổi': np.random.randint(30, 80, 1000),  # Tuổi từ 30 đến 80
+    'Hút thuốc': np.random.randint(0, 2, 1000),  # 0: Không hút, 1: Có hút thuốc
+    'Ho mãn tính': np.random.randint(0, 2, 1000),
+    'Khó thở': np.random.randint(0, 2, 1000),
+    'Đau ngực': np.random.randint(0, 2, 1000),
+    'Tiền sử gia đình': np.random.randint(0, 2, 1000),
+    'Ung thư phổi': np.random.choice([0, 1, 2, 3], size=1000, p=[0.2, 0.3, 0.3, 0.2])  # 0: Không có, 1-3: Mức độ nghiêm trọng
+}
+
+df = pd.DataFrame(data)
+
+# ✅ **Điều chỉnh dữ liệu để mô phỏng nguy cơ ung thư phổi thực tế**
+df.loc[df['Tuổi'] > 60, 'Ung thư phổi'] = 1
+df.loc[(df['Hút thuốc'] == 1) & (df['Ho mãn tính'] == 1), 'Ung thư phổi'] = 1
+df.loc[(df['Khó thở'] == 1) & (df['Đau ngực'] == 1), 'Ung thư phổi'] = 1
+df.loc[(df['Tuổi'] > 50) & (df['Hút thuốc'] == 1) & (df['Ho mãn tính'] == 0), 'Ung thư phổi'] = 2
+df.loc[(df['Tuổi'] <= 50) & (df['Hút thuốc'] == 0), 'Ung thư phổi'] = 3
+df.loc[(df['Hút thuốc'] == 0) & (df['Ho mãn tính'] == 0) & (df['Khó thở'] == 0) & 
+       (df['Đau ngực'] == 0) & (df['Tiền sử gia đình'] == 0), 'Ung thư phổi'] = 4
+
+# ✅ **Tách dữ liệu thành tập huấn luyện và tập kiểm tra**
+X = df.drop(columns=['Ung thư phổi'])  # Đầu vào (features)
+y = df['Ung thư phổi']  # Nhãn đầu ra (labels)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# ✅ **Huấn luyện mô hình Random Forest**
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# ✅ **Lưu mô hình lại sau khi huấn luyện**
+joblib.dump(model, 'lung_cancer_model.pkl')
+
+print("🎉 Mô hình đã được huấn luyện và lưu thành công vào 'lung_cancer_model.pkl'!")

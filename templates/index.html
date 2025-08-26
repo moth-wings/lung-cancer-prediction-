@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <title>Box-chat</title>
+    <meta charset="utf-8">
+    <script defer>
+        document.addEventListener("DOMContentLoaded", function () {
+            const textInput = document.querySelector(".text");
+            const sendButton = document.querySelector(".button");
+            const responseContainer = document.querySelector(".response");
+            const fileInput = document.querySelector("#file");
+            const uploadForm = document.querySelector("#upload-form");
+
+            // Hàm lưu cuộc trò chuyện vào Local Storage
+            function saveChatHistory() {
+                localStorage.setItem("chatHistory", responseContainer.innerHTML);
+            }
+
+            // Hàm tải lại lịch sử chat từ Local Storage
+            function loadChatHistory() {
+                const chatHistory = localStorage.getItem("chatHistory");
+                if (chatHistory) {
+                    responseContainer.innerHTML = chatHistory;
+                }
+            }
+
+            // Tải lại lịch sử chat khi trang được tải
+            loadChatHistory();
+
+            // Gửi tin nhắn và nhận phản hồi từ bot
+            function sendText(text) {
+                if (!text.trim()) return;
+                fetch("/process", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ text: text })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            const userMessage = `<p style='margin-left:700px;'><strong>Bạn:</strong> ${text}</p>`;
+                            const botMessage = `<p class="bot-response"><strong>[◉_◉]: </strong> ${data.response}</p>`;
+
+                            responseContainer.innerHTML += userMessage + botMessage;
+                            saveChatHistory();
+                        }
+                        textInput.value = "";
+                    })
+                    .catch(error => console.error("Lỗi:", error));
+            }
+
+            sendButton.addEventListener("click", function () {
+                sendText(textInput.value);
+            });
+
+            textInput.addEventListener("keypress", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendText(textInput.value);
+                }
+            });
+
+            uploadForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append("file", file);
+
+                fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            const errorMessage = `<p class="bot-response"><strong>Lỗi:</strong> ${data.error}</p>`;
+                            responseContainer.innerHTML += errorMessage;
+                        } else {
+                            const systemMessage = `<p class="bot-response"><strong>Hệ thống:</strong> ${data.result}</p>`;
+                            responseContainer.innerHTML += systemMessage;
+
+                            if (data.image_url) {
+                                responseContainer.innerHTML += `<img src="${data.image_url}" style='width:200px; display:block; margin-top:10px;'>`;
+                            }
+
+                        }
+
+                        saveChatHistory();
+                    })
+                    .catch(error => console.error("Lỗi tải ảnh:", error));
+            });
+
+            function startVoiceRecognition() {
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = "vi-VN";
+
+                recognition.onresult = function (event) {
+                    document.querySelector(".text").value = event.results[0][0].transcript;
+                };
+
+                recognition.start();
+            }
+
+            const clearButton = document.querySelector(".clear-history");
+
+            clearButton.addEventListener("click", function () {
+                localStorage.removeItem("chatHistory"); // Xóa lịch sử trong Local Storage
+                responseContainer.innerHTML = ""; // Xóa nội dung trên giao diện
+            });
+        });
+    </script>
+    <style>
+        body {
+            background-color: #282626;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            font-size: 10px;
+        }
+
+        .text {
+            padding: 10px;
+            border: none;
+            background-color: #3c3c3c;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            text-align: left;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #3c3c3c;
+            color: #fff;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 60%;
+        }
+
+        .button:hover {
+            background-color: #0097a7;
+        }
+
+        .record-btn {
+            margin-top: 20px;
+            font-size: 20px;
+            background-color: #28a745;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .record-btn:hover {
+            background-color: #218838;
+        }
+
+        .main {
+            display: flex;
+        }
+
+        .left-main {
+            background-color: rgb(28, 27, 27);
+            padding: 40px;
+            height: 95vh;
+            overflow-y: auto;
+        }
+
+        .abum {
+            clip-path: circle(50% at 50% 50%);
+            width: 30px;
+            height: auto;
+        }
+
+        .response {
+            padding: 10px 0px 0px 0px;
+            height: 80vh;
+            width: 80vw;
+            overflow-y: auto;
+        }
+
+        .input-section {
+            padding: 20px;
+        }
+
+        .left-main>h3:hover {
+            background-color: #2d2b2b;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .tooltip::after {
+            content: attr(data-note);
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        .scroll-box {
+            width: 300px;
+            border: 2px solid #3c3c3c;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .text-t {
+            width: 45%;
+            height: 50px;
+            margin-top: 10px;
+            margin-left: 300px;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            background-color: #3c3c3c;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            text-align: left;
+            position: fixed;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            font-size: 24px;
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            all: unset;
+            padding: 0px 0px 0px 20px;
+        }
+
+        .custom-file-upload::after {
+            content: attr(data-note);
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .custom-file-upload:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .click {
+            all: unset;
+            padding: 0px 0px 0px 20px;
+        }
+
+        .clear-history {
+            all: unset;
+            padding: 0px 0px 0px 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <div class="left-main">
+            <h3>◯ Six trợ lí ảo</h3>
+            <h3><a href='/form'>🗒 Form</a></h3>
+            <h3>🖼 Tải ảnh lên</h3>
+        </div>
+
+        <div class="input-section">
+            <div class="response"></div>
+            <div class="text-t">
+                <input class="text" type="text" name="text" placeholder="Triệu chứng của bạn là gì">
+                <button class="button">➤</button>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <label data-note='Tải ảnh chụp X-Quang' for="file" class="custom-file-upload">📂</label>
+                    <input type="file" name="file" id="file" accept="image/*">
+                    <button type="submit" class="custom-file-upload">Tải lên</button>
+                    <button type="button" data-note='Giọng nói' class="custom-file-upload"
+                        onclick="startVoiceRecognition()">🎙</button>
+                    <button class="clear-history">🗑</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

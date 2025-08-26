@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chẩn Đoán Ung Thư Phổi</title>
+    <style>
+        /* Thay đổi giao diện nền tối */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212; /* Nền tối */
+            color: #ffffff; /* Màu chữ sáng */
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Container form */
+        .form-container {
+            width: 400px;
+            margin: 50px auto;
+            background-color: #333333; /* Nền tối của form */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-container h2 {
+            text-align: center;
+            color: #00bcd4; /* Màu chữ cho tiêu đề */
+        }
+
+        .form-container input,
+        .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #222; /* Nền tối cho input */
+            color: #ffffff; /* Màu chữ sáng */
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .form-container button:hover {
+            background-color: #218838;
+        }
+
+        /* Tạo hiệu ứng động cho robot */
+        .robot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            background-color: #00bcd4;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: rotate 2s infinite linear;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .robot-head {
+            font-size: 40px;
+            color: white;
+        }
+
+        /* Kết quả dự đoán */
+        #prediction-result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #FFD700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Form chẩn đoán -->
+    <div class="form-container">
+        <h2>Biểu Mẫu Chẩn Đoán Ung Thư Phổi</h2>
+        <form id="diagnosis-form">
+            <label for="age">Tuổi</label>
+            <input type="number" id="age" name="age" required>
+
+            <label for="smoking">Có hút thuốc không?</label>
+            <select id="smoking" name="smoking" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+            </select>
+
+            <label for="chronic_cough">Có ho mãn tính không?</label>
+            <select id="chronic_cough" name="chronic_cough" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+            </select>
+
+            <label for="breath_difficulty">Có khó thở không?</label>
+            <select id="breath_difficulty" name="breath_difficulty" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+            </select>
+
+            <label for="chest_pain">Có đau ngực không?</label>
+            <select id="chest_pain" name="chest_pain" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+            </select>
+
+            <label for="family_history">Có tiền sử gia đình mắc ung thư phổi không?</label>
+            <select id="family_history" name="family_history" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+            </select>
+
+            <button type="submit">Gửi thông tin</button>
+            <button style="margin-top: 20px;" class="loa" onclick="window.location.href='http://127.0.0.1:5000/'">NAM_NGUYEN-Trợ lí ảo</button>
+        </form>
+
+        <div id="prediction-result"></div>
+    </div>
+
+    <!-- Hình ảnh robot động -->
+    <div class="robot-container">
+        <div class="robot-head">🤖</div>
+    </div>
+
+    <script>
+        document.getElementById('diagnosis-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const data = {
+                age: formData.get('age'),
+                smoking: formData.get('smoking'),
+                chronic_cough: formData.get('chronic_cough'),
+                breath_difficulty: formData.get('breath_difficulty'),
+                chest_pain: formData.get('chest_pain'),
+                family_history: formData.get('family_history')
+            };
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    document.getElementById('prediction-result').innerText = result.prediction;
+                })
+                .catch(error => {
+                    document.getElementById('prediction-result').innerText = 'Có lỗi xảy ra. Vui lòng thử lại!';
+                });
+        });
+    </script>
+</body>
+
+</html>
