@@ -8,4 +8,8 @@ Sử dụng thuật toán đơn giản, dễ dàng cho người mới bắt đ�
 [Email](namhust11@gmail.com)
 [Githug](moth-wings)
 
+#chat-bot
+#python
+#html
+
 
